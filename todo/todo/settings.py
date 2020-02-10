@@ -11,6 +11,18 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
+# import django_heroku
+import datetime
+#dotenv
+import dj_database_url
+import dotenv
+
+# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+dotenv_file = os.path.join(BASE_DIR, ".env")
+if os.path.isfile(dotenv_file):
+    dotenv.load_dotenv(dotenv_file)
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -27,6 +39,15 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# Email config
+EMAIL_HOST = os.getenv("EMAIL_HOST")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+EMAIL_PORT = 587
+DEFAULT_FROM_EMAIL = os.getenv("DEAFULT_FROM_EMAIL")
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_USE_TLS = True
+
 
 # Application definition
 
@@ -37,17 +58,30 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
+    'django_extensions',
+    'rest_framework',
+    'taggit',
+    'cloudinary',
+    'todo.apps.authentication',
+    'todo.apps.tasks',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.BrokenLinkEmailsMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ORIGIN_ALLOW_ALL = True
 
 ROOT_URLCONF = 'todo.urls'
 
@@ -118,3 +152,82 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
 STATIC_URL = '/static/'
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+CORS_ORIGIN_WHITELIST = [
+    'http://localhost:8000',
+    'https://inspiring-banach-27b723.netlify.com',
+]
+
+# Tell Django about the custom `User` model we created. The string
+# `authentication.User` tells Django we are referring to the `User` model in
+# the `authentication` module. This module is registered above in a setting
+# called `INSTALLED_APPS`.
+AUTH_USER_MODEL = 'authentication.User'
+
+REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'todo.apps.core.exceptions.core_exception_handler',
+    'NON_FIELD_ERRORS_KEY': 'error',
+
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+    ),
+
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    #This should be fixed on the frontend at most 15
+    'PAGE_SIZE': 150
+}
+
+# Django-Rest Framework Jwt settings
+JWT_AUTH = {
+    'JWT_ENCODE_HANDLER':
+        'rest_framework_jwt.utils.jwt_encode_handler',
+
+        'JWT_DECODE_HANDLER':
+        'rest_framework_jwt.utils.jwt_decode_handler',
+
+        'JWT_PAYLOAD_HANDLER':
+        'rest_framework_jwt.utils.jwt_payload_handler',
+
+        'JWT_PAYLOAD_GET_USER_ID_HANDLER':
+        'rest_framework_jwt.utils.jwt_get_user_id_from_payload_handler',
+
+        'JWT_RESPONSE_PAYLOAD_HANDLER':
+        'rest_framework_jwt.utils.jwt_response_payload_handler',
+
+        'JWT_SECRET_KEY': SECRET_KEY,
+        'JWT_GET_USER_SECRET_KEY': None,
+        'JWT_PUBLIC_KEY': None,
+        'JWT_PRIVATE_KEY': None,
+        'JWT_ALGORITHM': 'HS256',
+        'JWT_VERIFY': True,
+        'JWT_VERIFY_EXPIRATION': True,
+        'JWT_LEEWAY': 0,
+        'JWT_EXPIRATION_DELTA': datetime.timedelta(hours=3),
+        'JWT_AUDIENCE': None,
+        'JWT_ISSUER': None,
+
+        'JWT_ALLOW_REFRESH': False,
+        'JWT_REFRESH_EXPIRATION_DELTA': datetime.timedelta(days=10800),
+
+        'JWT_AUTH_HEADER_PREFIX': 'Bearer',
+        'JWT_AUTH_COOKIE': None,
+
+}
+
+# CLOUDINARY = {
+#     'cloud_name': os.getenv('CLOUDINARY_NAME'),
+#     'api_key': os.getenv('CLOUDINARY_KEY'),
+#     'api_secret': os.getenv('CLOUDINARY_SECRET'),
+#     'secure': True
+# }
+
+# Activate Django-Heroku.
+# django_heroku.settings(locals())
+# del DATABASES['default']['OPTIONS']['sslmode']
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+)
